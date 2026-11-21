@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
+    env:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -19,15 +22,15 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg libgl1-mesa-dri libegl1 libgbm1 libxkbcommon0
 
       - name: Extract project ZIP
         run: |
           mkdir -p project
           unzip -q submarine-explainer.zip -d project
-          echo "ZIP extracted successfully"
+          echo "Project extracted"
 
-      - name: Find project and install dependencies
+      - name: Locate project
         shell: bash
         run: |
           PACKAGE=$(find project -name package.json -not -path '*/node_modules/*' -print -quit)
@@ -40,23 +43,28 @@ jobs:
           PROJECT_DIR=$(dirname "$PACKAGE")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
+      - name: Install Node dependencies
+        run: |
           cd "$PROJECT_DIR"
+          npm install
 
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+      - name: Check Remotion version
+        run: |
+          cd "$PROJECT_DIR"
+          npx remotion --version
 
-      - name: Prepare Remotion browser
+      - name: Prepare browser
         run: |
           cd "$PROJECT_DIR"
           npx remotion browser ensure
 
-      - name: Render video using SwiftShader
+      - name: Render with software WebGL
         run: |
           cd "$PROJECT_DIR"
-          npx remotion render src/index.ts Submarine out/submarine.mp4 --gl=swiftshader
+          npx remotion render src/index.ts Submarine out/submarine.mp4 \
+            --gl=swangle \
+            --concurrency=1 \
+            --chromium-flags='{"enable-unsafe-swiftshader":true}'
 
       - name: Upload rendered video
         if: always()
