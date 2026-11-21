@@ -26,19 +26,18 @@ jobs:
           mkdir -p project
           unzip -q submarine-explainer.zip -d project
           echo "ZIP extracted successfully"
-          find project -maxdepth 3 -type f | head -100
 
       - name: Find project and install dependencies
         shell: bash
         run: |
-          PROJECT_DIR=$(find project -name package.json -not -path '*/node_modules/*' -print -quit)
+          PACKAGE=$(find project -name package.json -not -path '*/node_modules/*' -print -quit)
 
-          if [ -z "$PROJECT_DIR" ]; then
+          if [ -z "$PACKAGE" ]; then
             echo "ERROR: package.json not found"
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$PROJECT_DIR")
+          PROJECT_DIR=$(dirname "$PACKAGE")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
           cd "$PROJECT_DIR"
@@ -54,10 +53,10 @@ jobs:
           cd "$PROJECT_DIR"
           npx remotion browser ensure
 
-      - name: Render video with software WebGL
+      - name: Render video using SwiftShader
         run: |
           cd "$PROJECT_DIR"
-          npm run render -- --gl=swangle
+          npx remotion render src/index.ts Submarine out/submarine.mp4 --gl=swiftshader
 
       - name: Upload rendered video
         if: always()
@@ -69,3 +68,4 @@ jobs:
             project/**/*.log
           if-no-files-found: warn
           retention-days: 7
+          
