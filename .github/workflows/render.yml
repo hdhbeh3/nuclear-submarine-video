@@ -28,18 +28,15 @@ jobs:
         run: |
           mkdir -p project
           unzip -q submarine-explainer.zip -d project
-          echo "Project extracted"
 
       - name: Locate project
         shell: bash
         run: |
           PACKAGE=$(find project -name package.json -not -path '*/node_modules/*' -print -quit)
-
           if [ -z "$PACKAGE" ]; then
             echo "ERROR: package.json not found"
             exit 1
           fi
-
           PROJECT_DIR=$(dirname "$PACKAGE")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
@@ -48,17 +45,17 @@ jobs:
           cd "$PROJECT_DIR"
           npm install
 
-      - name: Check Remotion version
+      - name: Check Remotion versions
         run: |
           cd "$PROJECT_DIR"
-          npx remotion --version
+          npx remotion versions
 
       - name: Prepare browser
         run: |
           cd "$PROJECT_DIR"
           npx remotion browser ensure
 
-      - name: Render with software WebGL
+      - name: Render video
         run: |
           cd "$PROJECT_DIR"
           npx remotion render src/index.ts Submarine out/submarine.mp4 \
