@@ -29,14 +29,20 @@ jobs:
           find project -maxdepth 3 -type f | head -100
 
       - name: Find project and install dependencies
+        shell: bash
         run: |
-          PROJECT_DIR=$(find project -name package.json -not -path '*/node_modules/*' -print -quit | xargs dirname)
+          PROJECT_DIR=$(find project -name package.json -not -path '*/node_modules/*' -print -quit)
+
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: package.json not found"
             exit 1
           fi
-          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+          PROJECT_DIR=$(dirname "$PROJECT_DIR")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
           cd "$PROJECT_DIR"
+
           if [ -f package-lock.json ]; then
             npm ci
           else
@@ -48,20 +54,18 @@ jobs:
           cd "$PROJECT_DIR"
           npx remotion browser ensure
 
-      - name: Render video
+      - name: Render video with software WebGL
         run: |
           cd "$PROJECT_DIR"
-          npm run render
+          npm run render -- --gl=swangle
 
-      - name: Upload rendered files
+      - name: Upload rendered video
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: submarine-render-output
+          name: nuclear-submarine-video
           path: |
-            project/**/*.mp4
-            project/**/*.png
+            project/**/out/*.mp4
             project/**/*.log
           if-no-files-found: warn
           retention-days: 7
-          
